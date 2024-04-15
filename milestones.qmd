@@ -1,0 +1,32 @@
+# Milestones {.unnumbered}
+
+## Introduction and Background (Feb - Mar 2024)
+
+The thesis will commence with a description of the nature of water inflow in the NZ hydroelectric generation scheme and its significant impact on the NZ electricity market model (in terms of both price and reliability). The introduction will provide an overview of the significance of hydrological inflow simulation for dam reservoir management, energy production, and water resource planning. The background section will outline the industry-adopted non-parametric technique of using weekly historical inflow data from April 1931. Using dynamic programming techniques, these data are used to create water valuation tables.
+
+This technique is computationally intensive and as a consequence, alternative shorter inflow data (from history or simulated) would significantly improve market model run times. These shorter inflow data sets are the focus of this thesis. Ultimately we seek to recommend a preferred technique for generating and choosing a shorter inflow data set to be utilised by EnergyLink's water valuation model which is in turn an input to EnergyLink's market model.
+
+## Data Collection and Exploration (Apr - May 2024)
+
+This phase will involve the collection of relevant datasets. This data has been obtained from EnergyLink and has been processed and cleaned for use in their proprietary models. Climatological data pertinent to NZ's five hydroelectric schemes (e.g. teleconnections and precipitation measurements will be sourced from NIWA). The data will be explored to identify patterns, trends, distributions and correlations between variables. The goal is to gain insights into the relationships between meso- and macro-scale weather conditions and hydrological inflows.
+
+## Model Development and Implementation (Jun - Jul 2024)
+
+In this phase of the thesis we are generating the alternate (shorter) inflow data sets.
+
+There are three alternate inflow data sets:
+1.  By subsetting directly from the full historical data set in the form of rolling 30 year contiguous data subsets.\
+2.  Simulating from the full historical data set using a Moving Block Bootstrap ('MBB'). The MBB will be used to generate 30 year inflow data subsets and is a resampling technique that preserves the temporal correlation structure of the original data.\
+3.  Generating simulations from a Vector Auto Regression with exogenous variates ('VARx') model. The VARx model will be trained on the full historical data set and will be used to generate 30 year inflow data subsets.\
+
+These will be developed in a univariate and multivariate context. The univariate context will involve the development of a univariate time series model for a single scheme inflow. The multivariate context will involve the development of a multivariate time series model for all five schemes' inflow data. 
+
+## Experimentation and Evaluation (Jun - Sep 2024)
+
+In this phase, the alternate inflow data sets will be uploaded into EnergyLink's water valuation model and a water valuation table will be produced. We will develop relevant performance metrics when compared to the water valuation table produced using the full historical data set. Measures like Mean Absolute Error (MAE) and Root Mean Square Error (RMSE) will be used when determining "best fit". We will also consider the computational time taken to generate the water valuation table. The goal is to determine which of the alternate data sets generates the most similar water valuation table.
+
+## Final Analysis and Conclusion (Jul - Oct 2024)
+
+The final stage of the thesis will involve synthesizing the results, interpreting findings, and making a recommendation of which alternate inflow data set should be used when computing water valuation tables.
+
+Recommendations for further research, potential applications, and practical implications of the study will be discussed.

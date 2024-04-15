@@ -1,0 +1,338 @@
+# Exploration
+
+## Preface
+
+The scope of this thesis is to develop a statistical model to describe and simulate water inflow to New Zealand's 5 major hydro schemes. Combined, these 5 schemes are a major source of renewable energy in New Zealand, responsible for approximately (60%) of all electricity generated and reliability to the New Zealand grid.
+
+## Data
+
+Energy Link have provided me with weekly inflow data for each of the 5 schemes from 1931 to 2024. The data is in the form of cumulative inflow in cubic meters per second (cumecs) for each week of the year. The data is clean and complete, with no missing values.
+
+## Analysis
+
+```{r library_load, include = FALSE}
+
+library(tidyverse)
+library(fpp3)
+library(GGally)
+library(urca)
+
+```
+
+```{r data}
+
+## function to determine 1st Monday preceeding or on April 1 of a given year
+firstMonday <- function(year) {
+  # Create April 1 of the given year
+  april_first <- ymd(paste(year, "04-01"))
+  
+  # Check if April 1 is already a Monday, if not, find the preceding Monday
+  if (wday(april_first, week_start = 1) != 1) {  # 1 represents Monday
+    april_first <- april_first - days(wday(april_first, week_start = 1) - 1)
+  }
+  
+  return(april_first)
+}
+
+## inflow data load, clean and save as .rds
+
+# cumec_long <- read_csv("cumec.csv") |>
+#     pivot_longer(cols = -c(Scheme,Unit,Year), names_to = "Week", values_to = "Inflow") |>
+#     rowwise() |>
+#     mutate(Week = as.numeric(str_remove(Week, "Week")),
+#            Date = firstMonday(Year) + weeks(Week - 1)
+#            ) |>
+#     filter(!(Date == firstMonday(Year+1) & Week == 53)) |> # removes duplicates
+#     filter(Date <= dmy(31032023)) |> 
+#     select(Date,Scheme,Inflow)
+# 
+# 
+# 
+#  cumec_wide <- cumec_long |>
+#    pivot_wider(names_from = Scheme,
+#                values_from = Inflow)
+
+## save cumec_long and cumec_wide tibbles as .rds objects
+ # saveRDS(cumec_long, file = "cumec_long.rds")
+ # saveRDS(cumec_wide, file = "cumec_wide.rds")
+
+
+
+```
+
+```{r graphs}
+
+# reload clean wide data sets:
+
+cumec_wide <- readRDS("cumec_wide.rds") |> 
+  mutate(Type = "Actual") |> 
+  select(Date, Type, everything())
+
+glimpse(cumec_wide)
+
+minDate <- min(cumec_wide$Date)
+maxDate <- max(cumec_wide$Date)
+
+
+cumec_wide_pre <- cumec_wide |> 
+  filter(Date >= max(Date) - years(2)) |> 
+  mutate(Date = minDate + (row_number() - (n() + 1)) * 7,
+         Type = "Pre") 
+
+cumec_wide_post <- cumec_wide |> 
+  filter(Date <= min(Date) + years(26)) |> 
+  mutate(Date = maxDate + row_number() * 7,
+         Type = "Post") 
+
+cumec_wide_ts <- cumec_wide_pre |> 
+  bind_rows(cumec_wide) |> 
+  bind_rows(cumec_wide_post) |> 
+  as_tsibble(index = Date)
+
+# produce graphs of time series, ACF and PACF for Hawea
+
+cumec_wide_ts |>
+  filter(Type == "Actual") |>
+  gg_tsdisplay(Hawea, plot_type = "partial")
+
+# pull lambda coefficients for Box-Cox ("bc") transformation
+
+lambdaHawea <- cumec_wide_ts |> 
+  filter(Type == "Actual") |>
+  features(Hawea, guerrero) |> 
+  pull()
+
+lambdaManapouri <- cumec_wide_ts |> 
+  filter(Type == "Actual") |>
+  features(Manapouri, guerrero) |> 
+  pull()
+
+lambdaPukaki <- cumec_wide_ts |> 
+  filter(Type == "Actual") |>
+  features(Pukaki, guerrero) |> 
+  pull()
+
+lambdaTaupo <- cumec_wide_ts |> 
+  filter(Type == "Actual") |>
+  features(Taupo, guerrero) |> 
+  pull()
+
+lambdaTekapo <- cumec_wide_ts |> 
+  filter(Type == "Actual") |>
+  features(Tekapo, guerrero) |> 
+  pull()
+
+
+# mutate cumec_wide_ts to include Box-Cox transformed inflow data
+cumec_wide_ts <- cumec_wide_ts |> 
+  mutate(bcHawea = box_cox(Hawea, lambdaHawea),
+         bcManapouri = box_cox(Manapouri, lambdaManapouri),
+         bcPukaki = box_cox(Pukaki, lambdaPukaki),
+         bcTaupo = box_cox(Taupo, lambdaTaupo),
+         bcTekapo = box_cox(Tekapo, lambdaTekapo)
+         ) 
+
+# graph Box-Cox transformed inflow data with ACF and PACF
+cumec_wide_ts |>
+  filter(Type == "Actual",
+         Date >= dmy(01012001)) |>
+  gg_tsdisplay(bcHawea, plot_type = "partial") + 
+  labs(title = "Time series display of Box-Cox Transformed Hawea Inflow",
+       x = "Year",
+       y = "Transformed Inflow")
+  
+cumec_wide_ts |>
+  filter(Type == "Actual",
+         Date >= dmy(01012001)) |>
+  gg_tsdisplay(bcManapouri, plot_type = "partial") + 
+  labs(title = "Time series display of Box-Cox Transformed Manapouri Inflow",
+       x = "Year",
+       y = "Transformed Inflow")
+
+cumec_wide_ts |>
+  filter(Type == "Actual",
+         Date >= dmy(01012001)) |>
+  gg_tsdisplay(bcPukaki, plot_type = "partial") + 
+  labs(title = "Time series display of Box-Cox Transformed Pukaki Inflow",
+       x = "Year",
+       y = "Transformed Inflow")
+
+cumec_wide_ts |>
+  filter(Type == "Actual",
+         Date >= dmy(01012001)) |>
+  gg_tsdisplay(bcTaupo, plot_type = "partial") + 
+  labs(title = "Time series display of Box-Cox Transformed Taupo Inflow",
+       x = "Year",
+       y = "Transformed Inflow")
+
+cumec_wide_ts |>
+  filter(Type == "Actual",
+         Date >= dmy(01012001)) |>
+  gg_tsdisplay(bcTekapo, plot_type = "partial") + 
+  labs(title = "Time series display of Box-Cox Transformed Tekapo Inflow",
+       x = "Year",
+       y = "Transformed Inflow")
+
+
+```
+
+```{r}
+
+# histograms of inflow data for all 5 schemes
+
+glimpse(cumec_wide_ts)
+
+cumec_wide_ts |> 
+  filter(Type == "Actual") |> 
+  select(Date, !c(Type,starts_with("bc"))) |>
+  pivot_longer(!Date, names_to = "Scheme", values_to = "Inflow") |> 
+  ggplot(aes(x = Inflow, color = Scheme, fill = Scheme)) +
+  geom_histogram(bins = 50) +
+  facet_wrap(~Scheme, scales = "free") +
+  labs(title = "Inflow for each Scheme",
+       x = "Inflow (cumecs)",
+       y = "Count") +
+  theme(legend.position = "none",
+        strip.placement = "outside")
+
+# histograms of box-cox transformed inflow data for all 5 schemes
+
+cumec_wide_ts |> 
+  filter(Type == "Actual") |> 
+  select(Date, starts_with("bc")) |>
+  pivot_longer(!Date, names_to = "Scheme", values_to = "Inflow") |> 
+  ggplot(aes(x = Inflow, color = Scheme, fill = Scheme)) +
+  geom_histogram(bins = 50) +
+  facet_wrap(~Scheme, scales = "free") +
+  labs(title = "Box-Cox Transformed Inflow for each Scheme",
+       x = "Transformed Inflow",
+       y = "Count") +
+  theme(legend.position = "none",
+        strip.placement = "outside")
+
+# tidy tibble for ggplot
+cumec_long <- as_tibble(cumec_wide_ts) |> 
+  filter(Type == "Actual") |>
+  select(!Type) |> 
+  pivot_longer(!Date, names_to = "Scheme", values_to = "Inflow")
+
+
+# produce q-q plots to confirm near-normality of Box-Cox transformed inflow data
+cumec_long |> 
+  filter(startsWith(Scheme, "bc")) |> 
+  ggplot(aes(sample = Inflow, color = Scheme)) +
+  geom_qq() +
+  geom_qq_line(color = "black") +
+  facet_wrap(~Scheme, ncol = 5) +
+  theme(legend.position = "none") +
+  labs(title = "Normal Q-Q Plots for Box-Cox Transformed Inflows of each Scheme",
+       x = "Theoretical Standard Deviation",
+       y = "Sample Quantile")
+
+# look at pairs plot of log(inflows) of 5 schemes
+cumec_wide_ts |> as_tibble() |> 
+  select(starts_with("bc")) |> 
+  ggpairs(progress = FALSE) +
+  labs(title = "Pairs Plot for Box-Cox Transformed Inflows of each Scheme")
+
+# produce seasonal plot of weekly log(inflow) history for 1931 - 2024
+cumec_long |> 
+  mutate(Year = year(Date),
+         Week = week(Date)) |> 
+  filter(startsWith(Scheme, "bc")) |> 
+  ggplot(aes(x = Week, y = Inflow, color = Year, alpha = 0.1)) +
+  geom_jitter() +
+  geom_smooth(color = "red", method = "gam") + 
+  facet_wrap(~Scheme) +
+  theme(legend.position = "none") +
+  labs(title = "Seasonal Plots for Box-Cox Transformed Inflow of each Scheme",
+       x = "Week (1 - 53)",
+       y = "Transformed Inflow")
+
+```
+
+```{r}
+
+# fit STL model to Box-Cox transformed inflow data
+fit <- cumec_wide_ts |> 
+  filter(Type == "Actual") |>
+  model(stl = STL(bcPukaki)
+       )
+
+fit |> select(stl) |> components() |> head()  
+  
+fit |> select(stl) |> 
+  components() |> 
+  filter(Date >= dmy(01012000),
+         Date < dmy(01012021))|> 
+  autoplot()
+
+
+```
+
+```{r}
+
+
+## create object that includes dates and inflows for period you want to bootstrap
+hist <- cumec_wide_ts |> 
+  filter(Type == "Actual") |> 
+  select(Date,bcPukaki)
+
+hist_25 <- hist |> 
+  filter(Date <= min(Date) + years(x = 25))
+
+## create bootstrapped sims (2 year block bootstrap of errors)
+boot_stl <- fit |> 
+  select(stl) |> 
+  generate(new_data = hist_25, times = 10,
+           bootstrap_block_size = 2*52)
+
+glimpse(boot_stl)
+
+tail(boot_stl)
+
+boot_stl |> 
+  filter(.model == "stl") |> 
+  mutate(Quarter = quarter(Date)) |> 
+  ggplot(aes(x = .sim, group = as.factor(Quarter))) +
+    geom_density(aes(col = as.factor(Quarter)))
+
+
+boot_stl |> 
+  filter(Date >= dmy(01012000)) |>
+  autoplot(.sim)+
+  autolayer(hist_25, bcPukaki ) +
+  guides(colour = "none") +
+  labs(title = "Bootstrapped series for Pukaki Inflows (2000 - Present)",
+       y="Transformed Inflows")
+
+tail(boot_stl) 
+
+
+boot_stl |> 
+  select(.sim) |> 
+  filter(Date >= dmy(01012000),
+         Date < dmy(01012021))|> 
+  autoplot() +
+  autolayer(hist, bcPukaki )
+
+```
+
+```{r}
+
+## create a wide object of simulated years for each scheme
+## 
+
+years <- 1931:1935
+weeks <- 0:(25*52)
+
+cumec_wide_ts |> 
+  select(Date, Type, bcPukaki) |> 
+  mutate(Year = year(Date),
+         Quarter = paste0("Q",quarter(Date)),
+         Week = week(Date)) |> 
+  filter(Type == "Actual") |> 
+  ggplot(aes(x = bcPukaki, group = Quarter)) +
+geom_density(aes(col = Quarter), binwidth = 0.1)
+
+```

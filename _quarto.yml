@@ -1,0 +1,29 @@
+project:
+  type: book
+
+book:
+  title: "Modeling Water Inflows"
+  subtitle: "A Simulation-Based Study of New Zealand's 5 Major Hydroelectric Schemes"
+  author: "Benjamin Preston"
+  date: "8 April 2024"
+  chapters:
+    - index.qmd
+    - milestones.qmd
+    - intro.qmd
+    - exploration.qmd
+    - single_scheme.qmd
+    - dual_scheme.qmd
+    - multi_scheme.qmd
+    - summary.qmd
+    - references.qmd
+
+bibliography: references.bib
+
+format:
+  html:
+    theme: cosmo
+  pdf:
+    documentclass: scrreprt
+
+editor: visual
+

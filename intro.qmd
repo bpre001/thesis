@@ -1,0 +1,17 @@
+# Introduction
+
+This thesis investigates the application of two multivariate time series modeling techniques to analyse, parameterise and simulate hydrological inflows for New Zealand's five major dams - Hawea, Manapouri, Pukaki, Tekapo and Taupo. Hydrological inflow simulation is important for determining the value of water and water storage used in generating hydroelectric power and is a key input to modelling New Zealand's electricity market.
+
+Traditionally, water valuation models take all of the historic inflow data available and simulate variablity of flow for all of the schemes contemporaneously by cycling through the historical data from a starting week in each year. This method is non-parametric and by construction preserves the seasonal, autoregressive and covariance features of the original data series.
+
+However, this method is computationally intensive as the historic data set increases in size (currently 91 years \* 5 schemes \* 52 weeks), and soon to be 92 years... Indeed, we estimate that the number of calculations required to complete one 25 year forecast to be \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_.
+
+In the past, one computational workaround has been to reduce the historical inflow sample to approximately 30 years (WY1950 - WY1979 are often used) which has the impact of reducing calculations by approximately 2/3, which is significant. An important question is whether this contiguous subset of the historical inflow data is a fair representation of the original data set (or indeed is there a "better" contiguous subset?).
+
+This thesis explores two alternative approaches replacing the 30 year subset of contiguous historical data with a 30 year simulation of inflow data that has been derived from all of the available historical data. We would want to compare the performance of these simulations and their ability to capture and emulate temporal dependencies and interrelationships among inflow variables. Model performance metrics, including accuracy, precision, and reliability, are used to evaluate and validate these models, and ultimately to make a recommendation of which 30 year inflow data series works "best".
+
+The initial analysis will only consider one scheme and build a framework to determine the best performing model. The analysis will then be extended to include vector representation of all five schemes.
+
+The two multivariate time series models that I will build include a non-parametric Classical Additive Decomposition with Moving Block Bootstrapping and a parametric Vector Auto Regression Intergrated Moving Average with Exogeneous Variates (VARIMAx).
+
+Results from the study demonstrate the effectiveness of multivariate time series models in capturing the dynamic nature of hydrological inflows for New Zealand's major dams responsible for approximately 60% of Neq Zealand's electricity supply. The thesis will contributes insights into the factors influencing inflow variability and provides a framework for enhancing water resource management strategies through improved forecasting techniques.
