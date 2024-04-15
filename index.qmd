@@ -2,5 +2,5 @@
 
 This thesis investigates the application of two multivariate time series modeling techniques to analyse, parameterise and simulate hydrological inflows for New Zealand's five major dams - Hawea, Manapouri, Pukaki, Tekapo and Taupo. Hydrological inflow simulation is important for determining the value of water and water storage used in generating hydroelectric power and is a key input to modelling New Zealand's electricity market.
 
-Keywords: Multivariate Time Series Modeling, Hydrological Inflows, Dam Reservoirs, Forecasting, Simulation, New Zealand, Water Resource Management, Water Valuation, Version Control.
+Keywords: Multivariate Time Series Modeling, Hydrological Inflows, Dam Reservoirs, Forecasting, Simulation, New Zealand, Water Resource Management, Water Valuation, Version Control. GIT
 
