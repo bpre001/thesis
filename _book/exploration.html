@@ -616,7 +616,7 @@ $ .model   &lt;chr&gt; "stl", "stl", "stl", "stl", "stl", "stl", "stl", "stl", "
 $ .rep     &lt;chr&gt; "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "…
 $ Date     &lt;date&gt; 1931-03-30, 1931-04-06, 1931-04-13, 1931-04-20, 1931-04-27, …
 $ bcPukaki &lt;dbl&gt; 4.562747, 4.089285, 3.827256, 3.650954, 3.409922, 3.621410, 3…
-$ .sim     &lt;dbl&gt; 4.182298, 4.268454, 4.120428, 4.702637, 4.082642, 3.798914, 3…</code></pre>
+$ .sim     &lt;dbl&gt; 4.021049, 4.229601, 4.066377, 4.529302, 3.912816, 3.668039, 4…</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span>(boot_stl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -624,12 +624,12 @@ $ .sim     &lt;dbl&gt; 4.182298, 4.268454, 4.120428, 4.702637, 4.082642, 3.79891
 # Key:       .model, .rep [1]
   .model .rep  Date       bcPukaki  .sim
   &lt;chr&gt;  &lt;chr&gt; &lt;date&gt;        &lt;dbl&gt; &lt;dbl&gt;
-1 stl    9     1956-02-20     4.00  4.58
-2 stl    9     1956-02-27     3.97  4.15
-3 stl    9     1956-03-05     4.06  4.26
-4 stl    9     1956-03-12     4.10  4.10
-5 stl    9     1956-03-19     3.66  4.03
-6 stl    9     1956-03-26     3.72  3.89</code></pre>
+1 stl    9     1956-02-20     4.00  4.29
+2 stl    9     1956-02-27     3.97  4.16
+3 stl    9     1956-03-05     4.06  3.99
+4 stl    9     1956-03-12     4.10  4.36
+5 stl    9     1956-03-19     3.66  4.56
+6 stl    9     1956-03-26     3.72  4.43</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>boot_stl <span class="sc">|&gt;</span> </span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(.model <span class="sc">==</span> <span class="st">"stl"</span>) <span class="sc">|&gt;</span> </span>
@@ -663,12 +663,12 @@ $ .sim     &lt;dbl&gt; 4.182298, 4.268454, 4.120428, 4.702637, 4.082642, 3.79891
 # Key:       .model, .rep [1]
   .model .rep  Date       bcPukaki  .sim
   &lt;chr&gt;  &lt;chr&gt; &lt;date&gt;        &lt;dbl&gt; &lt;dbl&gt;
-1 stl    9     1956-02-20     4.00  4.58
-2 stl    9     1956-02-27     3.97  4.15
-3 stl    9     1956-03-05     4.06  4.26
-4 stl    9     1956-03-12     4.10  4.10
-5 stl    9     1956-03-19     3.66  4.03
-6 stl    9     1956-03-26     3.72  3.89</code></pre>
+1 stl    9     1956-02-20     4.00  4.29
+2 stl    9     1956-02-27     3.97  4.16
+3 stl    9     1956-03-05     4.06  3.99
+4 stl    9     1956-03-12     4.10  4.36
+5 stl    9     1956-03-19     3.66  4.56
+6 stl    9     1956-03-26     3.72  4.43</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>boot_stl <span class="sc">|&gt;</span> </span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(.sim) <span class="sc">|&gt;</span> </span>

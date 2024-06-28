@@ -278,24 +278,50 @@ hist <- cumec_wide_ts |>
   filter(Type == "Actual") |> 
   select(Date,bcPukaki)
 
-hist_25 <- hist |> 
-  filter(Date <= min(Date) + years(x = 25))
+hist_90 <- hist |> 
+  filter(Date <= min(Date) + years(x = 90))
 
-## create bootstrapped sims (2 year block bootstrap of errors)
+## create bootstrapped sims (5 year block bootstrap of errors)
 boot_stl <- fit |> 
   select(stl) |> 
-  generate(new_data = hist_25, times = 10,
-           bootstrap_block_size = 2*52)
+  generate(new_data = hist, 
+           times = 1,
+           bootstrap = TRUE,
+           bootstrap_block_size = 5*52)
 
 glimpse(boot_stl)
 
-tail(boot_stl)
+boot_stl
+
+boot_stl |> 
+  pivot_longer(cols = c(bcPukaki,.sim), names_to = "Names", values_to = "Values") |>
+  mutate(Quarter = quarter(Date)) |> 
+  filter(Date >= max(Date) - years(60)) |> 
+  ggplot(aes(x = Date, y = Values, color = Names)) +
+  geom_line()
+
+  
+boot_stl |> 
+  pivot_longer(cols = c(bcPukaki,.sim), names_to = "Names", values_to = "Values") |>
+  glimpse()
+
+
+  geom_density() +
+  facet_wrap(Names~.rep, scales = "fixed") 
+
 
 boot_stl |> 
   filter(.model == "stl") |> 
   mutate(Quarter = quarter(Date)) |> 
   ggplot(aes(x = .sim, group = as.factor(Quarter))) +
     geom_density(aes(col = as.factor(Quarter)))
+
+boot_stl |> 
+  filter(.model == "stl") |> 
+  mutate(Quarter = quarter(Date)) |> 
+  ggplot(aes(x = bcPukaki, group = as.factor(Quarter))) +
+    geom_density(aes(col = as.factor(Quarter)))
+
 
 
 boot_stl |> 
