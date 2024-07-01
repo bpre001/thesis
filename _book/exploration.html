@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.550">
+<meta name="generator" content="quarto-1.4.553">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -616,7 +616,11 @@ $ .model   &lt;chr&gt; "stl", "stl", "stl", "stl", "stl", "stl", "stl", "stl", "
 $ .rep     &lt;chr&gt; "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "…
 $ Date     &lt;date&gt; 1931-03-30, 1931-04-06, 1931-04-13, 1931-04-20, 1931-04-27, …
 $ bcPukaki &lt;dbl&gt; 4.562747, 4.089285, 3.827256, 3.650954, 3.409922, 3.621410, 3…
+<<<<<<< HEAD
 $ .sim     &lt;dbl&gt; 4.021049, 4.229601, 4.066377, 4.529302, 3.912816, 3.668039, 4…</code></pre>
+=======
+$ .sim     &lt;dbl&gt; 4.303852, 4.605366, 4.065177, 4.139513, 4.155125, 3.963292, 3…</code></pre>
+>>>>>>> 0da2d398ae3a992629649507a6c82c4b04ff7259
 </div>
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span>(boot_stl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -624,12 +628,21 @@ $ .sim     &lt;dbl&gt; 4.021049, 4.229601, 4.066377, 4.529302, 3.912816, 3.66803
 # Key:       .model, .rep [1]
   .model .rep  Date       bcPukaki  .sim
   &lt;chr&gt;  &lt;chr&gt; &lt;date&gt;        &lt;dbl&gt; &lt;dbl&gt;
+<<<<<<< HEAD
 1 stl    9     1956-02-20     4.00  4.29
 2 stl    9     1956-02-27     3.97  4.16
 3 stl    9     1956-03-05     4.06  3.99
 4 stl    9     1956-03-12     4.10  4.36
 5 stl    9     1956-03-19     3.66  4.56
 6 stl    9     1956-03-26     3.72  4.43</code></pre>
+=======
+1 stl    9     1956-02-20     4.00  4.56
+2 stl    9     1956-02-27     3.97  4.25
+3 stl    9     1956-03-05     4.06  4.45
+4 stl    9     1956-03-12     4.10  4.20
+5 stl    9     1956-03-19     3.66  4.07
+6 stl    9     1956-03-26     3.72  3.96</code></pre>
+>>>>>>> 0da2d398ae3a992629649507a6c82c4b04ff7259
 </div>
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>boot_stl <span class="sc">|&gt;</span> </span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(.model <span class="sc">==</span> <span class="st">"stl"</span>) <span class="sc">|&gt;</span> </span>
@@ -663,12 +676,21 @@ $ .sim     &lt;dbl&gt; 4.021049, 4.229601, 4.066377, 4.529302, 3.912816, 3.66803
 # Key:       .model, .rep [1]
   .model .rep  Date       bcPukaki  .sim
   &lt;chr&gt;  &lt;chr&gt; &lt;date&gt;        &lt;dbl&gt; &lt;dbl&gt;
+<<<<<<< HEAD
 1 stl    9     1956-02-20     4.00  4.29
 2 stl    9     1956-02-27     3.97  4.16
 3 stl    9     1956-03-05     4.06  3.99
 4 stl    9     1956-03-12     4.10  4.36
 5 stl    9     1956-03-19     3.66  4.56
 6 stl    9     1956-03-26     3.72  4.43</code></pre>
+=======
+1 stl    9     1956-02-20     4.00  4.56
+2 stl    9     1956-02-27     3.97  4.25
+3 stl    9     1956-03-05     4.06  4.45
+4 stl    9     1956-03-12     4.10  4.20
+5 stl    9     1956-03-19     3.66  4.07
+6 stl    9     1956-03-26     3.72  3.96</code></pre>
+>>>>>>> 0da2d398ae3a992629649507a6c82c4b04ff7259
 </div>
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>boot_stl <span class="sc">|&gt;</span> </span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(.sim) <span class="sc">|&gt;</span> </span>
@@ -798,6 +820,24 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     // clear code selection
     e.clearSelection();
   });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
   function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
     const config = {
       allowHTML: true,
@@ -832,7 +872,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      return note.innerHTML;
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
     });
   }
   const xrefs = window.document.querySelectorAll('a.quarto-xref');
