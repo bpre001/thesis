@@ -14,7 +14,7 @@ Manapouri_91 <- read_csv("Apr24 Manapori WV 91.csv") |>
          weekcount = (rn-1) %% (weeks + burnin),
          other_storage = floor((rn-1)/(weeks + burnin)),
          other_storage = round(other_storage / 12 * 100),
-         facet_title = paste("Other storage:", as.character(other_storage), "%")
+         # facet_title = paste("Other storage:", as.character(other_storage), "%")
          ) |> 
   select(-rn) |> 
   pivot_longer(-c(weekcount, other_storage, facet_title), 

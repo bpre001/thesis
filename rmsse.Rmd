@@ -1,0 +1,217 @@
+---
+title: "MPE Loss Function"
+author: "Benjamin Preston"
+date: "2024-08-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+``` {r data_in}
+# Load in WVs from full run (91 years + mean joiner)
+# Load in WVs from alternate data set
+
+weeks <- 54
+burnin <- 80
+
+df <- read_csv("Apr24B_AVG_0011_WVX.csv") |>  
+  mutate(rn = row_number(),
+         week = (rn - 1) %% (weeks + burnin) + 1,
+         other_storage = floor((rn-1)/(weeks + burnin)),
+         other_storage = round(other_storage / 12 * 100),
+         ) |> 
+  select(-rn) |> 
+  pivot_longer(-c(week, other_storage), 
+               names_to = "storage", values_to = "wv_base") |> 
+  mutate(storage = round(as.double(storage)*100),
+         wv_base = as.double(wv_base),
+         os_label = paste0("OS", str_pad(other_storage, width = 3, pad = "0"))
+         )
+
+new <- read_csv("Apr24B_0015_WVX.csv") |>  
+  mutate(rn = row_number(),
+         week = (rn - 1) %% (weeks + burnin) + 1,
+         other_storage = floor((rn-1)/(weeks + burnin)),
+         other_storage = round(other_storage / 12 * 100),
+         ) |> 
+  select(-rn) |> 
+  pivot_longer(-c(week, other_storage), 
+               names_to = "storage", values_to = "wv_new") |> 
+  mutate(storage = round(as.double(storage)*100),
+         wv_new = as.double(wv_new)
+         )
+
+## join the two data sets
+
+if (dim(df)[1] != dim(new)[1]) {
+  stop("Data sets are not the same length")
+} else {
+  df <- df |> 
+    bind_cols(new[,"wv_new"]) 
+}
+
+```
+
+## 
+```{r position}
+
+week <- 1:(weeks-1)
+
+wv <- 2^(-2:14)
+
+other_storage <- df |> 
+  distinct(other_storage) |>
+  arrange(other_storage) |>
+  pull(other_storage)
+
+storage_df <- expand_grid(week = week,
+                       wv = wv,
+                       other_storage = other_storage)
+
+
+storage_base <- function(wv, week, other_storage) {
+  # filter data by week and storage level
+  filtered_df <- df |> 
+    filter(week == !!week,
+           other_storage == !!other_storage)
+  
+  # check that there are enough data points to interpolate
+  if (nrow(filtered_df) < 2) {
+    stop("Not enough data points to interpolate")
+  }
+  
+  # interpolate the data using approx()
+  storage_base <- approx(x = filtered_df$wv_base,
+                                 y = filtered_df$storage,
+                                 xout = wv, rule = 2)$y
+  return(storage_base)
+}
+
+storage_new <- function(wv, week, other_storage) {
+  # filter data by week and storage level
+  filtered_df <- df |> 
+    filter(week == !!week,
+           other_storage == !!other_storage)
+  
+  # check that there are enough data points to interpolate
+  if (nrow(filtered_df) < 2) {
+    stop("Not enough data points to interpolate")
+  }
+  
+  # interpolate the data using approx()
+  storage_new <- approx(x = filtered_df$wv_new,
+                                 y = filtered_df$storage,
+                                 xout = wv, rule = 2)$y
+  return(storage_new)
+}
+
+
+
+
+storage_df <- storage_df |> 
+  mutate(stor_base = pmap_dbl(list(wv, week, other_storage), storage_base),
+         stor_new = pmap_dbl(list(wv, week, other_storage), storage_new),
+         stor_err = stor_new - stor_base, 
+         sq_stor_err = stor_err^2,
+         os_label = paste0("OS", str_pad(other_storage, width = 3, pad = "0"))
+         )
+
+# Define %notin% operator
+`%notin%` <- function(x, y) {
+  !(x %in% y)
+}
+
+
+storage_df %>% 
+  group_by(other_storage) %>%
+  summarise(rmsse = sqrt(mean(sq_stor_err))) %>% 
+  filter(other_storage %notin% c(0,100)) |>
+  ggplot(aes(x = other_storage, y = rmsse)) +
+  geom_line()
+
+storage_df %>% 
+  group_by(other_storage) %>%
+  summarise(rmsse = sqrt(mean(sq_stor_err))) %>% 
+  print()
+
+head(storage_df)
+
+```
+
+## Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+
+df %>% 
+  filter(week < 53,
+         # other_storage %notin% c(0,100)
+         ) |>
+  ggplot() +
+  geom_contour_filled(aes(x = week, y = storage, z = wv_base), breaks = 2^(-2:14)) +
+  geom_contour(aes(x = week, y = storage, z = wv_new), color = "white", breaks = 2^(-2:14)) +  # Add contour lines for clarity
+  labs(title = "Manapouri Water Values",
+       subtitle = "Base (fill) and New (line) Water Value Contours",
+       fill = "Base Water Values",
+       x = "Week",
+       y = "Manapouri Storage (%)") +
+  facet_wrap(~os_label, nrow = 3) +
+  theme_minimal()
+
+storage_df |> 
+  filter(week < 53,
+         # other_storage %notin% c(0,100)
+         ) |>
+  ggplot(aes(x = week, y = stor_err, group = wv)) +
+  geom_line(aes(color = as.factor(wv))) +
+  labs(title = "Storage Error",
+       subtitle = "Faceted by Other Storage (OS) Levels",
+       x = "Week",
+       y = "Storage Error",
+       color = "Water Values ($/MWh)") +
+  facet_wrap(~os_label, nrow = 3)
+
+wide_storage_df <- storage_df %>% 
+  filter(week < 53,
+         # other_storage %notin% c(0,100)
+         ) |>
+  group_by(other_storage,week) %>%
+  summarise(rmsse = sqrt(mean(sq_stor_err))) |>
+  pivot_wider(names_from = other_storage, values_from = rmsse) |>
+  rename_with(
+    .fn = ~ paste0("OS", str_pad(.x, width = 3, pad = "0")),
+    .cols = -1
+  ) |>
+  mutate(Mean = rowMeans(across(-week))) %>% 
+  pivot_longer(-week, names_to = "OS", values_to = "RMSSE")
+
+wide_storage_df |>
+  filter(OS != "Mean") %>% 
+  ggplot(aes(x = week, y = RMSSE, group = OS, color = OS)) +
+  geom_line(linewidth = .3) +
+  geom_line(data = wide_storage_df %>% filter(OS == "Mean"), aes(x = week, y = RMSSE), color = "black", linewidth = 1) +
+  labs(title = "Manapouri Root Mean Squared Storage Error",
+       subtitle = "by Week and Other Storage Level",
+       x = "Week",
+       y = "RMSSE",
+       color = "Other Storage Levels") +
+  theme_minimal()
+
+Grand_RMSSE <- wide_storage_df |>
+  filter(OS != "Mean") |>
+  pull(RMSSE) |>
+  mean() %>% 
+  print()
+
+summary(storage_df$stor_err)
+
+hist(storage_df$stor_err[storage_df$stor_err!= 0], breaks = 50)
+
+```
+
+
