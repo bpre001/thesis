@@ -129,9 +129,15 @@ storage_df <- storage_df |>
 storage_df %>% 
   group_by(other_storage) %>%
   summarise(rmsse = sqrt(mean(sq_stor_err))) %>% 
-  filter(other_storage %notin% c(0,100)) |>
   ggplot(aes(x = other_storage, y = rmsse)) +
   geom_line()
+
+storage_df %>% 
+  group_by(week) %>%
+  summarise(rmsse = sqrt(mean(sq_stor_err))) %>% 
+  ggplot(aes(x = week, y = rmsse)) +
+  geom_line()
+
 
 storage_df %>% 
   group_by(other_storage) %>%
@@ -146,7 +152,7 @@ head(storage_df)
 
 You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
+```{r plots, echo=FALSE}
 
 df %>% 
   filter(week < 53,
