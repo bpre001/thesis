@@ -1,6 +1,6 @@
 ---
 title: "Manapouri Water Valuation Comparison"
-subtitle: "Base (1931-2023) vs. New (1994-2023)"
+subtitle: "Base (1931-2023) vs. New (1981-2010)"
 author: "Benjamin Preston"
 date: "2024-09-02"
 output: html_document
@@ -15,16 +15,20 @@ library(tidyverse)
 
 ``` {r data_in}
 # Load in WVs from full run (91 years + mean joiner)
+# # Run 0020 - 1931-2023 + joiner
 # Load in WVs from alternate data set
-# Run 0020 - 1931-2023 + joiner
 # Run 0023 - 1931-1960 + joiner
 # Run 0025 - 1941-1970 + joiner
-# 
+# Run 0028 - 1951-1980 + joiner
+# Run 0030 - 1961-1990 + joiner
+# Run 0032 - 1971-2000 + joiner
+# Run 0037 - 1981-2010 + joiner
+# Run 0035 - 1991-2020 + joiner
 
 weeks <- 54
 burnin <- 80
 
-df <- read_csv("Apr24B_AVG_0011_WVX.csv", show_col_types = FALSE) |>  
+df <- read_csv("Apr24B_AVG_0020_WVX.csv", show_col_types = FALSE) |>  
   mutate(rn = row_number(),
          week = (rn - 1) %% (weeks + burnin) + 1,
          other_storage = floor((rn-1)/(weeks + burnin)),
@@ -38,7 +42,7 @@ df <- read_csv("Apr24B_AVG_0011_WVX.csv", show_col_types = FALSE) |>
          os_label = paste0("OS", str_pad(other_storage, width = 3, pad = "0"))
          )
 
-new <- read_csv("Apr24B_0018_WVX.csv", show_col_types = FALSE) |>  
+new <- read_csv("Apr24B_AVG_0037_WVX.csv", show_col_types = FALSE) |>  
   mutate(rn = row_number(),
          week = (rn - 1) %% (weeks + burnin) + 1,
          other_storage = floor((rn-1)/(weeks + burnin)),
@@ -82,7 +86,7 @@ storage_df <- expand_grid(week = week,
 storage_base <- function(wv, week, other_storage) {
   # filter data by week and storage level
   filtered_df <- df |> 
-    filter(week == !!week,
+    filter(week == !!week, # !! is the unquote operator
            other_storage == !!other_storage)
   
   # check that there are enough data points to interpolate
@@ -126,32 +130,6 @@ storage_df <- storage_df |>
          os_label = paste0("OS", str_pad(other_storage, width = 3, pad = "0"))
          )
 
-# Define %notin% operator
-`%notin%` <- function(x, y) {
-  !(x %in% y)
-}
-
-
-storage_df %>% 
-  group_by(other_storage) %>%
-  summarise(rmssd = sqrt(mean(sq_stor_diff))) %>% 
-  ggplot(aes(x = other_storage, y = rmssd)) +
-  geom_line()
-
-storage_df %>% 
-  group_by(week) %>%
-  summarise(rmssd = sqrt(mean(sq_stor_diff))) %>% 
-  ggplot(aes(x = week, y = rmssd)) +
-  geom_line()
-
-
-storage_df %>% 
-  group_by(other_storage) %>%
-  summarise(rmssd = sqrt(mean(sq_stor_diff))) %>% 
-  print()
-
-head(storage_df)
-
 ```
 
 
@@ -181,7 +159,7 @@ df %>%
   geom_contour_filled(aes(x = week, y = storage, z = wv_base), breaks = wv) +
   geom_contour(aes(x = week, y = storage, z = wv_new), color = "white", breaks = wv) +  # Add contour lines for clarity
   labs(title = "Manapouri Water Value Comparison",
-       subtitle = "Faceted by Inner Other Storage (OS) Levels [25, 75]",
+       subtitle = "Faceted by Inner Other Storage Levels (25 < OS < 75)",
        fill = "Water Values ($/MWh)",
        x = "Week",
        y = "Storage (0 - 100)") +
@@ -196,7 +174,7 @@ df %>%
   geom_contour_filled(aes(x = week, y = storage, z = wv_base), breaks = wv) +
   geom_contour(aes(x = week, y = storage, z = wv_new), color = "white", breaks = wv) +  # Add contour lines for clarity
   labs(title = "Manapouri Water Value Comparison",
-       subtitle = "Faceted by Outer Other Storage (OS) Levels",
+       subtitle = "Faceted by Outer Other Storage Levels (OS < 25 | OS > 75)",
        fill = "Water Values ($/MWh)",
        x = "Week",
        y = "Storage (0 - 100)") +
@@ -231,7 +209,7 @@ storage_df |>
   geom_line(aes(color = as.factor(wv))) +
   ylim(-100, 100) +
   labs(title = "Manapouri Storage Difference",
-       subtitle = "Faceted by Inner Other Storage (OS) Levels [25, 75]",
+       subtitle = "Faceted by Inner Other Storage Levels (25 <= OS <=  75)",
        x = "Week",
        y = "Storage Difference",
        color = "Water Values ($/MWh)") +
@@ -245,7 +223,7 @@ storage_df |>
   geom_line(aes(color = as.factor(wv))) +
   ylim(-100, 100) +
   labs(title = "Manapouri Storage Difference",
-       subtitle = "Faceted by Outer Other Storage (OS) Levels",
+       subtitle = "Faceted by Outer Other Storage Levels (OS < 25 | OS > 75)",
        x = "Week",
        y = "Storage Difference",
        color = "Water Values ($/MWh)") +
@@ -254,63 +232,82 @@ storage_df |>
 ```
 
 
-```{r rmssd, echo=FALSE}
+```{r mssd, echo=FALSE}
 
-inner_rmssd <- storage_df %>% 
-  filter(week < 53,
-         between(other_storage, 25, 75)) |>
+# Compute Mean Squared Storage Difference (note: don't take root until the end - bad!)
+
+mssd_wide <- storage_df %>% 
+  filter(week < 53) %>% 
   group_by(other_storage,week) %>%
-  summarise(rmssd = sqrt(mean(sq_stor_diff)), .groups = "drop") |>
-  pivot_wider(names_from = other_storage, values_from = rmssd) |>
+  summarise(mssd = mean(sq_stor_diff), .groups = "drop") |>
+  pivot_wider(names_from = other_storage, values_from = mssd) |>
   rename_with(
     .fn = ~ paste0("OS", str_pad(.x, width = 3, pad = "0")),
     .cols = -1
-  ) |>
-  mutate(Mean = rowMeans(across(-week))) %>% 
+  ) %>% 
+  mutate(week = as_factor(week))
+
+mssd_long <- mssd_wide %>% 
+  pivot_longer(-week, names_to = "OS", values_to = "mssd") %>% 
+  mutate(OS = as_factor(OS))
+
+rmssd_by_week <- mssd_long |> 
+  group_by(week) %>%
+  summarise(rmssd = sqrt(mean(mssd)), .groups = "drop")
+
+rmssd_by_os <- mssd_long |> 
+  group_by(OS) %>%
+  summarise(rmssd = sqrt(mean(mssd)), .groups = "drop")
+
+rmssd_wide <- mssd_wide |>
+  mutate(across(-week, sqrt))
+
+rmssd_long <- rmssd_wide |> 
   pivot_longer(-week, names_to = "OS", values_to = "rmssd")
 
-inner_rmssd |>
+# Residual Mean Squared Storage Difference (RMSSD) Plot by Week and Other Storage
+# Level 
+
+rmssd_long |>
   filter(OS != "Mean") |>
-  pull(rmssd) |>
-  summary() |>
-  print()
-
-outer_rmssd <- storage_df %>% 
-  filter(week < 53,
-         !between(other_storage, 25, 75)) |>
-  group_by(other_storage,week) %>%
-  summarise(rmssd = sqrt(mean(sq_stor_diff)), .groups = "drop") |>
-  pivot_wider(names_from = other_storage, values_from = rmssd) |>
-  rename_with(
-    .fn = ~ paste0("OS", str_pad(.x, width = 3, pad = "0")),
-    .cols = -1
-  ) |>
-  mutate(Mean = rowMeans(across(-week))) %>% 
-  pivot_longer(-week, names_to = "OS", values_to = "rmssd")
-
-outer_rmssd |>
-  filter(OS != "Mean") |>
-  pull(rmssd) |>
-  summary() |>
-  print()
-
-#Grand_Mean_RMSSD <- Summary_RMSSD[4] # pulls mean from summary output
-
-inner_rmssd |>
-  filter(OS != "Mean") %>% 
-  ggplot(aes(x = week, y = rmssd, group = OS)) +
-  geom_line(aes(color = "blue"),linewidth = .3) +
-  geom_line(data = inner_rmssd %>% filter(OS == "Mean"), aes(x = week, y = rmssd),
-            color = "black", linetype = "dashed", linewidth = 0.7) +
-  #annotate("text", x = Inf, y = 15, label = "Weekly Mean (dashed)", hjust = 1.1, color = "black", size = 4) +
-  #annotate("text", x = Inf, y = 14, label = "Grand Mean (solid)", hjust = 1.1, color = "black", size = 4) +
-  #geom_hline(yintercept = Grand_Mean_RMSSD, color = "black", linewidth = 1) +
-  labs(title = "Manapouri Root Mean Squared Storage Difference",
+  ggplot(aes(x = week, y = OS, fill = rmssd)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "forestgreen") +
+  labs(title = "Manapouri Root Mean Squared Storage Difference (RMSSD)",
        subtitle = "by Week and Other Storage Level",
        x = "Week",
-       y = "RMSSD",
-       color = "Other Storage Levels") +
+       y = "Other Storage Level",
+       fill = "RMSSD") +
   theme_minimal()
+
+# Residual Mean Squared Storage Difference (RMSSD) Plot by Week 
+
+rmssd_long %>% 
+  ggplot(aes(x = week, y = rmssd, group = OS)) +
+  geom_line(aes(color = OS)) + 
+  labs(title = "Manapouri Root Mean Squared Storage Difference (RMSSD)",
+       subtitle = "by Week",
+       x = "Week",
+       y = "RMSSD",
+       color = "Other Storage Level")
+
+# Residual Mean Squared Storage Difference (RMSSD) Plot by Other Storage Level 
+
+rmssd_long %>% 
+  ggplot(aes(x = OS, y = rmssd, group = week)) +
+  geom_line(aes(color = week)) + 
+  labs(title = "Manapouri Root Mean Squared Storage Difference (RMSSD)",
+       subtitle = "by Other Storage Level",
+       x = "Other Storage Level",
+       y = "RMSSD",
+       color = "Week")
+
+# Compute Grand RMSSD for Manapouri
+
+mssd_long |>
+  summarise(rmssd = sqrt(mean(mssd))) |>
+  print()
+
 
 ```
 

@@ -1,0 +1,315 @@
+---
+title: "Manapouri Water Valuation Comparison"
+subtitle: "Base (1931-2023) vs. New (1991-2020)"
+author: "Benjamin Preston"
+date: "2024-09-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+library(tidyverse)
+
+```
+
+
+``` {r data_in}
+# Load in WVs from full run (91 years + mean joiner)
+# # Run 0020 - 1931-2023 + joiner
+# Load in WVs from alternate data set
+# Run 0023 - 1931-1960 + joiner
+# Run 0025 - 1941-1970 + joiner
+# Run 0028 - 1951-1980 + joiner
+# Run 0030 - 1961-1990 + joiner
+# Run 0032 - 1971-2000 + joiner
+# Run 0037 - 1981-2010 + joiner
+# Run 0035 - 1991-2020 + joiner
+
+weeks <- 54
+burnin <- 80
+
+df <- read_csv("Apr24B_AVG_0020_WVX.csv", show_col_types = FALSE) |>  
+  mutate(rn = row_number(),
+         week = (rn - 1) %% (weeks + burnin) + 1,
+         other_storage = floor((rn-1)/(weeks + burnin)),
+         other_storage = round(other_storage / 12 * 100),
+         ) |> 
+  select(-rn) |> 
+  pivot_longer(-c(week, other_storage), 
+               names_to = "storage", values_to = "wv_base") |> 
+  mutate(storage = round(as.double(storage)*100),
+         wv_base = as.double(wv_base),
+         os_label = paste0("OS", str_pad(other_storage, width = 3, pad = "0"))
+         )
+
+new <- read_csv("Apr24B_AVG_0035_WVX.csv", show_col_types = FALSE) |>  
+  mutate(rn = row_number(),
+         week = (rn - 1) %% (weeks + burnin) + 1,
+         other_storage = floor((rn-1)/(weeks + burnin)),
+         other_storage = round(other_storage / 12 * 100),
+         ) |> 
+  select(-rn) |> 
+  pivot_longer(-c(week, other_storage), 
+               names_to = "storage", values_to = "wv_new") |> 
+  mutate(storage = round(as.double(storage)*100),
+         wv_new = as.double(wv_new)
+         )
+
+## join the two data sets
+
+if (dim(df)[1] != dim(new)[1]) {
+  stop("Data sets are not the same length")
+} else {
+  df <- df |> 
+    bind_cols(new[,"wv_new"]) 
+}
+
+```
+
+## 
+```{r storage, warning=FALSE}
+
+week <- 1:(weeks-1)
+
+wv <- 2^(0:12)
+
+other_storage <- df |> 
+  distinct(other_storage) |>
+  arrange(other_storage) |>
+  pull(other_storage)
+
+storage_df <- expand_grid(week = week,
+                       wv = wv,
+                       other_storage = other_storage)
+
+
+storage_base <- function(wv, week, other_storage) {
+  # filter data by week and storage level
+  filtered_df <- df |> 
+    filter(week == !!week, # !! is the unquote operator
+           other_storage == !!other_storage)
+  
+  # check that there are enough data points to interpolate
+  if (nrow(filtered_df) < 2) {
+    stop("Not enough data points to interpolate")
+  }
+  
+  # interpolate the data using approx()
+  storage_base <- approx(x = filtered_df$wv_base,
+                                 y = filtered_df$storage,
+                                 xout = wv, rule = 2)$y
+  return(storage_base)
+}
+
+storage_new <- function(wv, week, other_storage) {
+  # filter data by week and storage level
+  filtered_df <- df |> 
+    filter(week == !!week,
+           other_storage == !!other_storage)
+  
+  # check that there are enough data points to interpolate
+  if (nrow(filtered_df) < 2) {
+    stop("Not enough data points to interpolate")
+  }
+  
+  # interpolate the data using approx()
+  storage_new <- approx(x = filtered_df$wv_new,
+                                 y = filtered_df$storage,
+                                 xout = wv, rule = 2)$y
+  return(storage_new)
+}
+
+
+
+
+storage_df <- storage_df |> 
+  mutate(stor_base = pmap_dbl(list(wv, week, other_storage), storage_base),
+         stor_new = pmap_dbl(list(wv, week, other_storage), storage_new),
+         stor_diff = stor_new - stor_base, 
+         sq_stor_diff = stor_diff^2,
+         os_label = paste0("OS", str_pad(other_storage, width = 3, pad = "0"))
+         )
+
+```
+
+
+```{r contour, echo=FALSE}
+
+df %>% 
+  filter(week < 53,
+         other_storage %in% c(50)
+         ) |>
+  ggplot() +
+  geom_contour_filled(aes(x = week, y = storage, z = wv_base), breaks = wv) + # Base fill
+  geom_contour(aes(x = week, y = storage, z = wv_new), color = "white", breaks = wv) +  # New line
+  labs(title = "Manapouri Water Value Comparison",
+       subtitle = "Mid Other Storage (OS) Level == 50",
+       fill = "Water Values ($/MWh)",
+       x = "Week",
+       y = "Storage (0 - 100)") +
+  facet_wrap(~os_label, nrow = 1) +
+  theme_minimal()
+
+df %>% 
+  filter(week < 53,
+         between(other_storage, 25, 75),
+         other_storage != 50 # %in% c(25,33,42,58,67,75)
+         ) |>
+  ggplot() +
+  geom_contour_filled(aes(x = week, y = storage, z = wv_base), breaks = wv) +
+  geom_contour(aes(x = week, y = storage, z = wv_new), color = "white", breaks = wv) +  # Add contour lines for clarity
+  labs(title = "Manapouri Water Value Comparison",
+       subtitle = "Faceted by Inner Other Storage Levels (25 < OS < 75)",
+       fill = "Water Values ($/MWh)",
+       x = "Week",
+       y = "Storage (0 - 100)") +
+  facet_wrap(~os_label, nrow = 2) +
+  theme_minimal()
+
+df %>% 
+  filter(week < 53,
+         !between(other_storage, 25, 75) # %notin% c(25,33,42,50,58,67,75)
+         ) |>
+  ggplot() +
+  geom_contour_filled(aes(x = week, y = storage, z = wv_base), breaks = wv) +
+  geom_contour(aes(x = week, y = storage, z = wv_new), color = "white", breaks = wv) +  # Add contour lines for clarity
+  labs(title = "Manapouri Water Value Comparison",
+       subtitle = "Faceted by Outer Other Storage Levels (OS < 25 | OS > 75)",
+       fill = "Water Values ($/MWh)",
+       x = "Week",
+       y = "Storage (0 - 100)") +
+  facet_wrap(~os_label, nrow = 2) +
+  theme_minimal()
+
+```
+
+
+```{r line, echo=FALSE}
+
+storage_df |> 
+  filter(week < 53,
+         other_storage == 50
+         ) |>
+  ggplot(aes(x = week, y = stor_diff, group = wv)) +
+  geom_line(aes(color = as.factor(wv))) +
+  ylim(-100, 100) +
+  labs(title = "Manapouri Storage Difference",
+       subtitle = "Mid Other Storage (OS) Level == 50",
+       x = "Week",
+       y = "Storage Difference",
+       color = "Water Values ($/MWh)") +
+  facet_wrap(~os_label, nrow = 1)
+
+storage_df |> 
+  filter(week < 53,
+         other_storage != 50,
+         between(other_storage, 25, 75)
+         ) |>
+  ggplot(aes(x = week, y = stor_diff, group = wv)) +
+  geom_line(aes(color = as.factor(wv))) +
+  ylim(-100, 100) +
+  labs(title = "Manapouri Storage Difference",
+       subtitle = "Faceted by Inner Other Storage Levels (25 <= OS <=  75)",
+       x = "Week",
+       y = "Storage Difference",
+       color = "Water Values ($/MWh)") +
+  facet_wrap(~os_label, nrow = 2)
+
+storage_df |> 
+  filter(week < 53,
+         !between(other_storage, 25, 75)
+         ) |>
+  ggplot(aes(x = week, y = stor_diff, group = wv)) +
+  geom_line(aes(color = as.factor(wv))) +
+  ylim(-100, 100) +
+  labs(title = "Manapouri Storage Difference",
+       subtitle = "Faceted by Outer Other Storage Levels (OS < 25 | OS > 75)",
+       x = "Week",
+       y = "Storage Difference",
+       color = "Water Values ($/MWh)") +
+  facet_wrap(~os_label, nrow = 2)
+
+```
+
+
+```{r mssd, echo=FALSE}
+
+# Compute Mean Squared Storage Difference (note: don't take root until the end - bad!)
+
+mssd_wide <- storage_df %>% 
+  filter(week < 53) %>% 
+  group_by(other_storage,week) %>%
+  summarise(mssd = mean(sq_stor_diff), .groups = "drop") |>
+  pivot_wider(names_from = other_storage, values_from = mssd) |>
+  rename_with(
+    .fn = ~ paste0("OS", str_pad(.x, width = 3, pad = "0")),
+    .cols = -1
+  ) %>% 
+  mutate(week = as_factor(week))
+
+mssd_long <- mssd_wide %>% 
+  pivot_longer(-week, names_to = "OS", values_to = "mssd") %>% 
+  mutate(OS = as_factor(OS))
+
+rmssd_by_week <- mssd_long |> 
+  group_by(week) %>%
+  summarise(rmssd = sqrt(mean(mssd)), .groups = "drop")
+
+rmssd_by_os <- mssd_long |> 
+  group_by(OS) %>%
+  summarise(rmssd = sqrt(mean(mssd)), .groups = "drop")
+
+rmssd_wide <- mssd_wide |>
+  mutate(across(-week, sqrt))
+
+rmssd_long <- rmssd_wide |> 
+  pivot_longer(-week, names_to = "OS", values_to = "rmssd")
+
+# Residual Mean Squared Storage Difference (RMSSD) Plot by Week and Other Storage
+# Level 
+
+rmssd_long |>
+  filter(OS != "Mean") |>
+  ggplot(aes(x = week, y = OS, fill = rmssd)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "forestgreen") +
+  labs(title = "Manapouri Root Mean Squared Storage Difference (RMSSD)",
+       subtitle = "by Week and Other Storage Level",
+       x = "Week",
+       y = "Other Storage Level",
+       fill = "RMSSD") +
+  theme_minimal()
+
+# Residual Mean Squared Storage Difference (RMSSD) Plot by Week 
+
+rmssd_long %>% 
+  ggplot(aes(x = week, y = rmssd, group = OS)) +
+  geom_line(aes(color = OS)) + 
+  labs(title = "Manapouri Root Mean Squared Storage Difference (RMSSD)",
+       subtitle = "by Week",
+       x = "Week",
+       y = "RMSSD",
+       color = "Other Storage Level")
+
+# Residual Mean Squared Storage Difference (RMSSD) Plot by Other Storage Level 
+
+rmssd_long %>% 
+  ggplot(aes(x = OS, y = rmssd, group = week)) +
+  geom_line(aes(color = week)) + 
+  labs(title = "Manapouri Root Mean Squared Storage Difference (RMSSD)",
+       subtitle = "by Other Storage Level",
+       x = "Other Storage Level",
+       y = "RMSSD",
+       color = "Week")
+
+# Compute Grand RMSSD for Manapouri
+
+mssd_long |>
+  summarise(rmssd = sqrt(mean(mssd))) |>
+  print()
+
+
+```
+
+
+
