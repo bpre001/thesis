@@ -12,8 +12,8 @@ library(readr)
 
 # Setup
 inflows_csv_in <- "Inflows240125_HMD_IF.csv"
-#years <- 1931:2023 # full historic dataset
-years <- seq(1994, by = 1, length.out = 30)
+years <- 1931:2023 # full historic dataset
+#years <- seq(1994, by = 1, length.out = 30)
 inflows_csv_out = paste0("Inflows_",years[1],"_",years[length(years)],"_AVG_IF.csv")
 
 # Load the data
